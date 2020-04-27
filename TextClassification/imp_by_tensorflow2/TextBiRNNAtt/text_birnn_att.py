@@ -8,7 +8,7 @@
 import  tensorflow as tf
 from tensorflow.keras.layers import Embedding, Dense, GRU, Bidirectional
 from tensorflow.keras import Model
-from attention import Attention
+from TextClassification.imp_by_tensorflow2.TextBiRNNAtt.attention import Attention
 
 def point_wise_feed_forward_network(dense_size):
     ffn = tf.keras.Sequential()

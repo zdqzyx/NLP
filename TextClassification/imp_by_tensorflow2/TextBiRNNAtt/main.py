@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-# @Time : 2020/4/20 14:43
+# @Time : 2020/4/21 11:44
 # @Author : zdqzyx
 # @File : main.py
 # @Software: PyCharm
+
 
 # ===================== set random  ===========================
 import numpy as np
@@ -15,11 +16,9 @@ tf.random.set_seed(0)
 
 import os
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
-from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.datasets import imdb
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from textcnn import TextCNN
-
+from TextClassification.imp_by_tensorflow2.TextBiRNNAtt.text_birnn_att import TextBiRNNAtt
 
 def checkout_dir(dir_path, do_delete=False):
     import shutil
@@ -43,28 +42,27 @@ class ModelHepler:
         self.create_model()
 
     def create_model(self):
-        model = TextCNN(maxlen=self.maxlen,
+        model = TextBiRNNAtt(maxlen=self.maxlen,
                          max_features=self.max_features,
                          embedding_dims=self.embedding_dims,
                          class_num=self.class_num,
-                         kernel_sizes=[2,3,5],
-                         kernel_regularizer=None,
-                         last_activation='softmax')
+                         last_activation='softmax',
+                          # dense_size=[128]
+                          )
         model.compile(
             optimizer='adam',
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=['accuracy'],
         )
-
-        model.build_graph(input_shape=(None, maxlen))
+        model.build_graph(input_shape=(None, self.maxlen))
         model.summary()
         self.model =  model
 
-    def get_callback(self, use_early_stop=True, tensorboard_log_dir='logs\\TextCNN-epoch-5', checkpoint_path="save_model_dir\\cp-moel.ckpt"):
+    def get_callback(self, use_early_stop=True, tensorboard_log_dir='logs\\FastText-epoch-5', checkpoint_path="save_model_dir\\cp-moel.ckpt"):
         callback_list = []
         if use_early_stop:
             # EarlyStopping
-            early_stopping = EarlyStopping(monitor='val_accuracy', patience=7, mode='max')
+            early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, mode='max')
             callback_list.append(early_stopping)
         if checkpoint_path is not None:
             # save model
@@ -81,7 +79,7 @@ class ModelHepler:
                                              )
             callback_list.append(cp_callback)
         if tensorboard_log_dir is not None:
-            # tensorboard --logdir logs/TextCNN-epoch-5
+            # tensorboard --logdir logs/FastText-epoch-5
             checkout_dir(tensorboard_log_dir, do_delete=True)
             tensorboard_callback = TensorBoard(log_dir=tensorboard_log_dir, histogram_freq=1)
             callback_list.append(tensorboard_callback)
@@ -108,12 +106,12 @@ class ModelHepler:
 # ================  params =========================
 class_num = 2
 maxlen = 400
-embedding_dims = 200
+embedding_dims = 100
 epochs = 10
 batch_size = 128
 max_features = 5000
 
-MODEL_NAME = 'TextCNN-epoch-10-emb-200'
+MODEL_NAME = 'TextBiRNNAtt-epoch-10-emb-100'
 
 use_early_stop=True
 tensorboard_log_dir = 'logs\\{}'.format(MODEL_NAME)
@@ -123,6 +121,7 @@ checkpoint_path = 'save_model_dir\\'+MODEL_NAME+'\\cp-{epoch:04d}.ckpt'
 
 print('Loading data...')
 (x_train, y_train), (x_test, y_test) = imdb.load_data(num_words=max_features)
+
 print('Pad sequences (samples x time)...')
 x_train = pad_sequences(x_train, maxlen=maxlen, padding='post')
 x_test = pad_sequences(x_test, maxlen=maxlen, padding='post')
@@ -138,6 +137,8 @@ model_hepler = ModelHepler(class_num=class_num,
                            )
 model_hepler.get_callback(use_early_stop=use_early_stop, tensorboard_log_dir=tensorboard_log_dir, checkpoint_path=checkpoint_path)
 model_hepler.fit(x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
+
+
 print('Test...')
 result = model_hepler.model.predict(x_test)
 test_score = model_hepler.model.evaluate(x_test, y_test,
@@ -145,7 +146,7 @@ test_score = model_hepler.model.evaluate(x_test, y_test,
 print("test loss:", test_score[0], "test accuracy", test_score[1])
 
 
-
+print('Restored Model...')
 model_hepler = ModelHepler(class_num=class_num,
                            maxlen=maxlen,
                            max_features=max_features,
@@ -154,6 +155,6 @@ model_hepler = ModelHepler(class_num=class_num,
                            batch_size=batch_size
                            )
 model_hepler.load_model(checkpoint_path=checkpoint_path)
-# 重新评估模型
+# 重新评估模型  0.8790
 loss, acc = model_hepler.model.evaluate(x_test, y_test, verbose=2)
 print("Restored model, accuracy: {:5.2f}%".format(100 * acc))

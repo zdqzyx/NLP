@@ -18,7 +18,7 @@ import os
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 from tensorflow.keras.datasets import imdb
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from text_birnn_att import TextBiRNNAtt
+from TextClassification.imp_by_tensorflow2.TextBiRNN.text_birnn import TextBiRNN
 
 def checkout_dir(dir_path, do_delete=False):
     import shutil
@@ -42,18 +42,19 @@ class ModelHepler:
         self.create_model()
 
     def create_model(self):
-        model = TextBiRNNAtt(maxlen=self.maxlen,
+        model = TextBiRNN(maxlen=self.maxlen,
                          max_features=self.max_features,
                          embedding_dims=self.embedding_dims,
                          class_num=self.class_num,
                          last_activation='softmax',
-                          # dense_size=[128]
+                          dense_size=[128, 64]
                           )
         model.compile(
             optimizer='adam',
             loss=tf.keras.losses.SparseCategoricalCrossentropy(),
             metrics=['accuracy'],
         )
+
         model.build_graph(input_shape=(None, self.maxlen))
         model.summary()
         self.model =  model
@@ -62,7 +63,7 @@ class ModelHepler:
         callback_list = []
         if use_early_stop:
             # EarlyStopping
-            early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, mode='max')
+            early_stopping = EarlyStopping(monitor='val_accuracy', patience=7, mode='max')
             callback_list.append(early_stopping)
         if checkpoint_path is not None:
             # save model
@@ -108,10 +109,10 @@ class_num = 2
 maxlen = 400
 embedding_dims = 100
 epochs = 10
-batch_size = 128
+batch_size = 256
 max_features = 5000
 
-MODEL_NAME = 'TextBiRNNAtt-epoch-10-emb-100'
+MODEL_NAME = 'TextBiRNN-epoch-10-emb-100-avg2-dense2'
 
 use_early_stop=True
 tensorboard_log_dir = 'logs\\{}'.format(MODEL_NAME)
@@ -137,8 +138,6 @@ model_hepler = ModelHepler(class_num=class_num,
                            )
 model_hepler.get_callback(use_early_stop=use_early_stop, tensorboard_log_dir=tensorboard_log_dir, checkpoint_path=checkpoint_path)
 model_hepler.fit(x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test)
-
-
 print('Test...')
 result = model_hepler.model.predict(x_test)
 test_score = model_hepler.model.evaluate(x_test, y_test,
@@ -146,7 +145,6 @@ test_score = model_hepler.model.evaluate(x_test, y_test,
 print("test loss:", test_score[0], "test accuracy", test_score[1])
 
 
-print('Restored Model...')
 model_hepler = ModelHepler(class_num=class_num,
                            maxlen=maxlen,
                            max_features=max_features,

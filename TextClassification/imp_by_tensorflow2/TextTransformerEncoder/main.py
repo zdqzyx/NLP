@@ -19,7 +19,7 @@ import os
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 from tensorflow.keras.datasets import imdb
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from imp_by_tensorflow2.TextTransformerEncoder.modeling import TextTransformerEncoder
+from TextClassification.imp_by_tensorflow2.TextTransformerEncoder.modeling import TextTransformerEncoder
 
 def create_padding_mask(seq):
     seq = tf.cast(tf.math.equal(seq, 0), tf.float32)
@@ -142,7 +142,7 @@ num_heads = 4
 dff = 128
 pe_input = max_features
 
-MODEL_NAME = 'TextTransformerEncoder-epoch-10-emb-400-gru'
+MODEL_NAME = 'TextTransformerEncoder-epoch-20-emb-200'
 
 use_early_stop=True
 tensorboard_log_dir = 'logs\\{}'.format(MODEL_NAME)
